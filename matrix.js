@@ -3,12 +3,21 @@ var a = generateMatrix(n);
 var b = generateMatrix(n);
 var c = generateC(n);
 
+var tileSize = 128;
+
 function matMul() {
   var start = window.performance.now();
-  for (var i = 0; i < n; i++) {
-    for (var j = 0; j < n; j++) {
-      for (var k = 0; k < n; k++) {
-        c[(i << 10) | j] += a[(i << 10) | k] * b[(j << 10) | k];
+  for (var ih = 0; ih < n; ih += tileSize) {
+    for (var jh = 0; jh < n; jh += tileSize) {
+      for (var kh = 0; kh < n; kh += tileSize) {
+        for (var il = 0; il < tileSize; il++) {
+          for (var jl = 0; jl < tileSize; jl++) {
+            for (var kl = 0; kl < tileSize; kl++) {
+              c[((ih | il) << 10) | (jh | jl)] += a[((ih | il) << 10) | (kh | kl)] *
+                                                  b[((jh | jl) << 10) | (kh | kl)];
+            }
+          }
+        }
       }
     }
   }
