@@ -4,32 +4,33 @@ var b = generateMatrix(n);
 var c = generateC(n);
 
 function matMul() {
+  var start = window.performance.now();
   for (var i = 0; i < n; i++) {
     for (var j = 0; j < n; j++) {
       for (var k = 0; k < n; k++) {
-        c[i][j] += a[i][k] * b[k][j];
+        c[i * n + j] += a[i * n + k] * b[k * n + j];
       }
     }
   }
+  var end = window.performance.now();
+  return end - start;
 }
 
 function generateC(n) {
-  var c = [];
+  var c = new Float64Array(n * n);
   for (var i = 0; i < n; i++) {
-    c[i] = new Float64Array(n);
     for (var j = 0; j < n; j++) {
-      c[i][j] = 0;
+      c[i * n + j] = 0;
     }
   }
   return c;
 }
 
 function generateMatrix(n) {
-  var a = [];
+  var a = new Float64Array(n * n);
   for (var i = 0; i < n; i++) {
-    a[i] = new Float64Array(n);
     for (var j = 0; j < n; j++) {
-      a[i][j] = Math.random();
+      a[i * n + j] = Math.random();
     }
   }
   return a;
@@ -41,10 +42,8 @@ function perfTest(name, fun) {
   var warmup = 4;
   for (var i = 0; i < total + warmup; i++) {
     console.log(i);
-    var start = window.performance.now();
-    fun();
-    var end = window.performance.now();
-    runs.push(end - start);
+    var time = fun();
+    runs.push(time);
   }
 
   // Only average, stddev would be pretty interesting too
@@ -56,5 +55,5 @@ function perfTest(name, fun) {
 }
 
 function testTriply() {
-  perfTest('Triply-nested global typed arrays', matMul);
+  perfTest('Triply-nested global typed aggregated arrays', matMul);
 }
