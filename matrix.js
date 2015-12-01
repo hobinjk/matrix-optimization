@@ -8,7 +8,7 @@ function matMul() {
   for (var i = 0; i < n; i++) {
     for (var j = 0; j < n; j++) {
       for (var k = 0; k < n; k++) {
-        c[(i << 10) | j] += a[(i << 10) | k] * b[(k << 10) | j];
+        c[(i << 10) | j] += a[(i << 10) | k] * b[(j << 10) | k];
       }
     }
   }
@@ -55,5 +55,5 @@ function perfTest(name, fun) {
 }
 
 function testTriply() {
-  perfTest('Triply-nested global typed aggregated arrays', matMul);
+  perfTest('Triply-nested global typed transposed aggregated arrays', matMul);
 }
