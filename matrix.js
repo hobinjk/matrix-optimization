@@ -1,5 +1,9 @@
-function matMul(a, b, c) {
-  var n = a.length;
+var n = 1024;
+var a = generateMatrix(n);
+var b = generateMatrix(n);
+var c = generateC(n);
+
+function matMul() {
   for (var i = 0; i < n; i++) {
     for (var j = 0; j < n; j++) {
       for (var k = 0; k < n; k++) {
@@ -52,11 +56,5 @@ function perfTest(name, fun) {
 }
 
 function testTriply() {
-  var n = 512;
-  var a = generateMatrix(n);
-  var b = generateMatrix(n);
-  var c = generateC(n);
-  perfTest('Triply-nested', function() {
-    matMul(a, b, c);
-  });
+  perfTest('Triply-nested global', matMul);
 }
