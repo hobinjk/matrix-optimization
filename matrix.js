@@ -44,11 +44,11 @@ function perfTest(name, fun) {
   }
 
   // Only average, stddev would be pretty interesting too
-  var average = runs.reduce(function(avg, run) {
-    return avg + run / runs.length;
-  }, 0);
+  var min = runs.reduce(function(a, b) {
+    return Math.min(a, b);
+  });
 
-  console.log(name + ': ' + average + ' ms');
+  console.log(name + ': ' + min + ' ms');
 }
 
 function testTriply() {
