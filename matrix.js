@@ -16,7 +16,7 @@ function matMul() {
 function generateC(n) {
   var c = [];
   for (var i = 0; i < n; i++) {
-    c[i] = [];
+    c[i] = new Float64Array(n);
     for (var j = 0; j < n; j++) {
       c[i][j] = 0;
     }
@@ -27,7 +27,7 @@ function generateC(n) {
 function generateMatrix(n) {
   var a = [];
   for (var i = 0; i < n; i++) {
-    a[i] = [];
+    a[i] = new Float64Array(n);
     for (var j = 0; j < n; j++) {
       a[i][j] = Math.random();
     }
@@ -56,5 +56,5 @@ function perfTest(name, fun) {
 }
 
 function testTriply() {
-  perfTest('Triply-nested global', matMul);
+  perfTest('Triply-nested global typed arrays', matMul);
 }
