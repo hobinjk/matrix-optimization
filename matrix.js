@@ -2,13 +2,21 @@ var n = 1024;
 var a = generateMatrix(n);
 var b = generateMatrix(n);
 var c = generateC(n);
+var LOG_N = 10;
 
 function matMul() {
   var start = window.performance.now();
   for (var i = 0; i < n; i++) {
-    for (var j = 0; j < n; j++) {
-      for (var k = 0; k < n; k++) {
-        c[(i << 10) | j] += a[(i << 10) | k] * b[(j << 10) | k];
+    for (var jh = 0; jh < n; jh += 4) {
+      for (var k = 0; k < n; k += 4) {
+        for (var jl = 0; jl < 4; jl++) {
+          var simdC = SIMD.Float32x4.load(c, (i << LOG_N) | jh);
+          var simdA = SIMD.Float32x4.load(a, (i << LOG_N) | k);
+          var simdB = SIMD.Float32x4.load(b, ((jh + jl) << LOG_N) | k);
+          var simdMul = SIMD.Float32x4.mul(simdA, simdB);
+          var simdCPlusAB = SIMD.Float32x4.add(simdC, simdMul);
+          SIMD.Float32x4.store(c, (i << LOG_N) | jh, simdCPlusAB);
+        }
       }
     }
   }
@@ -17,7 +25,7 @@ function matMul() {
 }
 
 function generateC(n) {
-  var c = new Float64Array(n * n);
+  var c = new Float32Array(n * n);
   for (var i = 0; i < n; i++) {
     for (var j = 0; j < n; j++) {
       c[i * n + j] = 0;
@@ -27,7 +35,7 @@ function generateC(n) {
 }
 
 function generateMatrix(n) {
-  var a = new Float64Array(n * n);
+  var a = new Float32Array(n * n);
   for (var i = 0; i < n; i++) {
     for (var j = 0; j < n; j++) {
       a[i * n + j] = Math.random();
