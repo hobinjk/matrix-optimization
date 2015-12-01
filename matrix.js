@@ -1,27 +1,50 @@
 var n = 1024;
+var LOG_N = 10;
+var tileN = n / 2;
+var LOG_TILE_N = LOG_N - 1;
+
+var workerTL = new Worker('matrix-worker.js');
+var workerTR = new Worker('matrix-worker.js');
+var workerBL = new Worker('matrix-worker.js');
+var workerBR = new Worker('matrix-worker.js');
+
 var a = generateMatrix(n);
 var b = generateMatrix(n);
 var c = generateC(n);
-var LOG_N = 10;
 
-function matMul() {
+function matMul(finish) {
   var start = window.performance.now();
-  for (var i = 0; i < n; i++) {
-    for (var jh = 0; jh < n; jh += 4) {
-      for (var k = 0; k < n; k += 4) {
-        for (var jl = 0; jl < 4; jl++) {
-          var simdC = SIMD.Float32x4.load(c, (i << LOG_N) | jh);
-          var simdA = SIMD.Float32x4.load(a, (i << LOG_N) | k);
-          var simdB = SIMD.Float32x4.load(b, ((jh + jl) << LOG_N) | k);
-          var simdMul = SIMD.Float32x4.mul(simdA, simdB);
-          var simdCPlusAB = SIMD.Float32x4.add(simdC, simdMul);
-          SIMD.Float32x4.store(c, (i << LOG_N) | jh, simdCPlusAB);
-        }
+
+  var workingWorkers = 4;
+  function onMessage(message) {
+    var startI = message.startI;
+    var startJ = message.startJ;
+    var workerC = message.c;
+
+    for (var i = startI; i < startI + tileN; i++) {
+      for (var j = startJ; j < startJ + tileN; j++) {
+        var tileI = i - startI;
+        var tileJ = j - startJ;
+
+        c[(i << LOG_N) | j] = workerC[(tileI << LOG_TILE_N) | tileJ];
       }
     }
+
+    workingWorkers -= 1;
+    if (workingWorkers === 0) {
+      var end = window.performance.now();
+      finish(end - start);
+    }
   }
-  var end = window.performance.now();
-  return end - start;
+  workerTL.onmessage = onMessage;
+  workerTR.onmessage = onMessage;
+  workerBL.onmessage = onMessage;
+  workerBR.onmessage = onMessage;
+
+  workerTL.postMessage({a: a, b: b, startI: 0, startJ: 0});
+  workerTR.postMessage({a: a, b: b, startI: 0, startJ: tileN});
+  workerBL.postMessage({a: a, b: b, startI: tileN, startJ: 0});
+  workerBR.postMessage({a: a, b: b, startI: tileN, startJ: tileN});
 }
 
 function generateC(n) {
@@ -44,24 +67,25 @@ function generateMatrix(n) {
   return a;
 }
 
-function perfTest(name, fun) {
+function perfTest(name) {
   var runs = [];
-  var total = 16;
-  var warmup = 4;
-  for (var i = 0; i < total + warmup; i++) {
-    console.log(i);
-    var time = fun();
-    runs.push(time);
+  var total = 20;
+  function runOneTest() {
+    if (runs.length > total) {
+      var min = runs.reduce(function(a, b) {
+        return Math.min(a, b);
+      });
+      console.log(name + ': ' + min + ' ms');
+      return;
+    }
+    matMul(function(time) {
+      runs.push(time);
+      runOneTest();
+    });
   }
-
-  // Only average, stddev would be pretty interesting too
-  var min = runs.reduce(function(a, b) {
-    return Math.min(a, b);
-  });
-
-  console.log(name + ': ' + min + ' ms');
+  runOneTest();
 }
 
 function testTriply() {
-  perfTest('Triply-nested global typed transposed aggregated arrays', matMul);
+  perfTest('Triply-nested global typed transposed aggregated arrays with SIMD and WebWorkers', matMul);
 }
